@@ -1,0 +1,71 @@
+name: Deploy website
+
+# Every push to main (including edits made on github.com) is checked and
+# then published to https://rudra-xai.github.io. Can also be run by hand
+# from the Actions tab.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy at a time; a newer push replaces a queued one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Required files exist
+        run: |
+          for f in index.html assets/rudra-x-ai-logo.png assets/favicon.svg .nojekyll; do
+            [ -f "$f" ] || { echo "::error::Missing $f"; exit 1; }
+          done
+
+      - name: Local links resolve
+        run: |
+          missing=0
+          for ref in $(grep -oE '(src|href)="[^"#:]+"' index.html | sed -E 's/^(src|href)="//; s/"$//' | grep -v '^/$' | sort -u); do
+            if [ ! -e "${ref#/}" ]; then
+              echo "::error file=index.html::Broken reference: $ref"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: HTML is well-formed
+        run: npx --yes html-validate@8 --rule 'no-inline-style:off' --rule 'no-raw-characters:off' --rule 'prefer-native-element:off' --rule 'no-trailing-whitespace:off' --rule 'long-title:off' index.html
+
+  deploy:
+    name: Publish to GitHub Pages
+    needs: check
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble site (skip repo-only files)
+        run: |
+          mkdir _site
+          cp -r index.html assets .nojekyll _site/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

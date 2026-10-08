@@ -36,3 +36,12 @@ To preview locally before pushing, run `npx http-server . -p 5173` in this folde
 - **Fonts:** Tektur (headings), Martian Mono (labels/buttons), Inter (body), loaded from Google Fonts.
 - **Links:** the Tally form (`https://tally.so/r/zxdbP1`), contact email, and Calendly link — search the file for them to change.
 - **Scrolling strip text:** the `<div class="track">` block (the list appears twice so the loop is seamless — edit both).
+
+## Automatic deployment (CI/CD)
+
+`.github/workflows/deploy.yml` runs on every push to `main` (and can be started by hand from the **Actions** tab). It:
+
+1. **Checks** the site — required files exist, every local image/link in `index.html` points to a real file, and the HTML is well-formed.
+2. **Deploys** to GitHub Pages only if the checks pass. If a check fails, the live site stays as it was and the failing step in the Actions tab says what's wrong.
+
+Only `index.html`, `assets/` and `.nojekyll` are published; `README.md`, `brand/` and `.github/` stay in the repo only.
