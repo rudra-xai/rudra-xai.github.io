@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   check:
-    name: Check site
+    name: Check and package site
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -45,16 +45,6 @@ jobs:
       - name: HTML is well-formed
         run: npx --yes html-validate@8 --rule 'no-inline-style:off' --rule 'no-raw-characters:off' --rule 'prefer-native-element:off' --rule 'no-trailing-whitespace:off' --rule 'long-title:off' index.html
 
-  deploy:
-    name: Publish to GitHub Pages
-    needs: check
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v7
-
       - name: Assemble site (skip repo-only files)
         run: |
           mkdir _site
@@ -66,6 +56,14 @@ jobs:
         with:
           path: _site
 
+  deploy:
+    name: Publish to GitHub Pages
+    needs: check
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v5
